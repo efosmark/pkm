@@ -1,11 +1,41 @@
 import unipkg
 import argparse
+import inspect
+
+def list_providers():
+    for provider in unipkg.all_providers.keys():
+        print(provider)
+
+def members_to_subparsers(subparsers, obj):
+    mem = {}
+    for member_name, member_value in inspect.getmembers(obj):
+        if member_name.startswith('_'):
+            continue
+        mem[member_name] = []
+        p = subparsers.add_parser(member_name.replace('_', '-'), help=member_value.__doc__)
+        for param in inspect.signature(member_value).parameters.values():
+            mem[member_name].append(param)
+            if param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and param.default != inspect.Parameter.empty:
+                opts = {
+                    "default": param.default,
+                }
+                
+                if param.annotation == bool:
+                    opts['action'] = 'store_true'
+                elif param.annotation:
+                    opts['type'] = param.annotation
+                p.add_argument(f'--{param.name}', **opts)
+            else:
+                p.add_argument(param.name, type=param.annotation)
+    return mem
 
 def run():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--verbose', action='store_true', help='Increase output verbosity')
-    parser.add_argument('--provider', type=str, default='yay', choices=unipkg.all_providers.keys(), help='Select the package management provider')
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument('--provider', '-p', type=str, default='yay', choices=unipkg.all_providers.keys(), help='Select the package management provider')
 
+    args, remaining_args = parser.parse_known_args()
+    provider = unipkg.all_providers[args.provider]()
+    
     subparsers = parser.add_subparsers(
         title=argparse.SUPPRESS,
         dest='command',
@@ -13,47 +43,23 @@ def run():
         required=True,
         metavar='command',
     )
-
-    install_psr = subparsers.add_parser('install', help='install the specified packages',)
-    install_psr.add_argument('package', nargs='+')
-
-    remove_psr = subparsers.add_parser('remove', help='uninstall the specified packages')
-    remove_psr.add_argument('package', nargs='+')
-
-    search_psr = subparsers.add_parser('search', help='query the package database')
-    search_psr.add_argument('query', help='search string')  
-
-    info_psr = subparsers.add_parser('info', help='view the package metadata')
-    info_psr.add_argument('package', help='package of interest')
-
-    subparsers.add_parser('stats', help='show installation stats')
-    subparsers.add_parser('clean', help='clean the package database')
-    subparsers.add_parser('update', help='update the local package database')
-    subparsers.add_parser('upgrade', help='perform an upgrade of installed packages')
-    subparsers.add_parser('list-installed', help='show installed packages')
-    subparsers.add_parser('list-providers', help='show available providers')
-
-    provider = unipkg.YayProvider()
-
-    args = parser.parse_args()
-    if args.command == 'install':
-        provider.install(*args.package)
-    elif args.command == 'remove':
-        provider.remove(*args.package)
-    elif args.command == 'upgrade':
-        provider.upgrade()
-    elif args.command == 'search':
-        provider.search(args.query)
-    elif args.command == 'info':
-        provider.info(args.package)
-    elif args.command == 'stats':
-        provider.stats()
-    elif args.command == 'clean':
-        provider.clean()
-    elif args.command == 'update':
-        provider.update()
-    elif args.command == 'list-installed':
-        provider.list_installed()
+    
+    mem = members_to_subparsers(subparsers, provider)
+    
+    subparsers.add_parser('help', help='show help')
+    subparsers.add_parser('list-providers', help='list the available package manager providers')
+    
+    args = parser.parse_args(remaining_args)
+    
+    command = args.command.replace('-', '_')
+    method = getattr(provider, command, None)
+    
+    if method is None or args.command == 'help':
+        parser.print_help()
+        raise SystemExit
     elif args.command == 'list-providers':
-        for provider in unipkg.all_providers.keys():
-            print(provider)
+        list_providers()
+        raise SystemExit
+    else:
+        method(**dict([(arg.name, getattr(args, arg.name)) for arg in mem[command]]))
+        

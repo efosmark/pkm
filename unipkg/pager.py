@@ -1,7 +1,7 @@
 import subprocess
 from typing import Optional, Callable
 
-CMD_PAGER = ['/usr/bin/less', '--chop-long-lines', '--RAW-CONTROL-CHARS', '--use-color',  '--tilde', '-c']
+CMD_PAGER = ['/usr/bin/less', '--chop-long-lines', '--RAW-CONTROL-CHARS', '--use-color', '--quit-at-eof', '--quit-if-one-screen',  '--redraw-on-quit ', '--tilde', '-c']
 
 def paged_subprocess(*args, modify_line:Optional[Callable[[str],str]]=None):
     p1 = subprocess.Popen(*args, stdout=subprocess.PIPE, text=True)
