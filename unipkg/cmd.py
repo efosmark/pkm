@@ -31,7 +31,7 @@ def members_to_subparsers(subparsers, obj):
 
 def run():
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--provider', '-p', type=str, default='yay', choices=unipkg.all_providers.keys(), help='Select the package management provider')
+    parser.add_argument('--provider', '-p', type=str, default='yay', choices=['auto', *unipkg.all_providers.keys()], help='Select the package management provider')
 
     args, remaining_args = parser.parse_known_args()
     provider = unipkg.all_providers[args.provider]()

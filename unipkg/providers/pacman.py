@@ -4,21 +4,19 @@ from ..provider import Provider
 from ..packageinfo import PackageInfo 
 from ..pager import paged_subprocess
 
-CMD_INSTALL = ['yay', '-Sy', '--cleanafter', '--removemake', '--answerdiff', 'None', '--answeredit', 'None', '--answerupgrade', 'None']
-CMD_REMOVE = ['yay', '-Rns']
-CMD_UPGRADE = ['yay', '-Syu', '--cleanafter', '--removemake', '--answerdiff', 'None', '--answeredit', 'None', '--answerupgrade', 'None']
-CMD_UPDATE = ['yay', '-Sy']
-CMD_SEARCH = ['yay', '-Ss', '--singlelineresults']
-CMD_INFO = ['yay', '-Si']
-CMD_CLEAN = ['yay', '-Yc']
-CMD_CLEAN_DEEP = ['yay', '-Sc']
-CMD_STATS = ['yay', '-Ps']
-CMD_INSTALLED = ['yay', '-Qqe']
-
+CMD_INSTALL = ['pacman', '-Sy']
+CMD_REMOVE = ['pacman', '-Rns']
+CMD_UPGRADE = ['pacman', '-Syu']
+CMD_UPDATE = ['pacman', '-Sy']
+CMD_SEARCH = ['pacman', '-Ss', '--singlelineresults']
+CMD_INFO = ['pacman', '-Si']
+CMD_CLEAN = ['pacman', '-Yc']
+CMD_CLEAN_DEEP = ['pacman', '-Sc']
+CMD_STATS = ['pacman', '-Ps']
+CMD_INSTALLED = ['pacman', '-Qqe']
 
 def _parse_search_line(raw_line:str):
     sc = TinyScanner(raw_line)
-    
     r = PackageInfo()
     r.repo = sc.read_until('/')
     r.name = sc.read_until(' ')
@@ -35,7 +33,7 @@ def _parse_search_line(raw_line:str):
     r.description = sc.read_until()
     return str(r)
 
-class YayProvider(Provider):
+class PacmanProvider(Provider):
     
     def install(self, *package:str) -> bool:
         return subprocess.Popen([*CMD_INSTALL, *package]).wait() == 0
@@ -50,16 +48,10 @@ class YayProvider(Provider):
     def update(self) -> bool:
         return subprocess.Popen(CMD_UPDATE).wait() == 0
     
-    def search(self, query:str, noaur:bool=False) -> bool:
-        cmd = [*CMD_SEARCH]
-        if noaur:
-            cmd.append('--repo')
-        cmd.append(query)
-        print(f'search({query!r}, {noaur=!r})')
-        return paged_subprocess(cmd, modify_line=_parse_search_line).wait() == 0
+    def search(self, query:str) -> bool:
+        return paged_subprocess([*CMD_SEARCH, query], modify_line=_parse_search_line).wait() == 0
         
     def info(self, package:str) -> bool:
-        print(f'info({package!r})')
         return subprocess.Popen([*CMD_INFO, package]).wait() == 0
     
     def stats(self) -> bool:
