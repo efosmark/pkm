@@ -39,7 +39,6 @@ class PacmanProvider(Provider):
         return subprocess.Popen([*CMD_INSTALL, *package]).wait() == 0
         
     def remove(self, *package:str) -> bool:
-        """remove a package or a series of packages"""
         return subprocess.Popen([*CMD_REMOVE, *package]).wait() == 0
     
     def upgrade(self) -> bool:

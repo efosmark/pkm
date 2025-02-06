@@ -6,13 +6,21 @@ def list_providers():
     for provider in unipkg.all_providers.keys():
         print(provider)
 
+def get_member_doc(member_name, member_value):
+    if member_value.__doc__:
+        return member_value.__doc__
+    elif hasattr(unipkg.Provider, member_name):
+        return getattr(unipkg.Provider, member_name).__doc__ or "-"
+    return "-"
+
 def members_to_subparsers(subparsers, obj):
+    """Take an object `obj` and convert its object members into an argparse subparser."""
     mem = {}
     for member_name, member_value in inspect.getmembers(obj):
         if member_name.startswith('_'):
             continue
         mem[member_name] = []
-        p = subparsers.add_parser(member_name.replace('_', '-'), help=member_value.__doc__)
+        p = subparsers.add_parser(member_name.replace('_', '-'), help=get_member_doc(member_name, member_value))
         for param in inspect.signature(member_value).parameters.values():
             mem[member_name].append(param)
             if param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and param.default != inspect.Parameter.empty:
@@ -54,11 +62,11 @@ def run():
     command = args.command.replace('-', '_')
     method = getattr(provider, command, None)
     
-    if method is None or args.command == 'help':
-        parser.print_help()
-        raise SystemExit
-    elif args.command == 'list-providers':
+    if args.command == 'list-providers':
         list_providers()
+        raise SystemExit
+    elif method is None or args.command == 'help':
+        parser.print_help()
         raise SystemExit
     else:
         method(**dict([(arg.name, getattr(args, arg.name)) for arg in mem[command]]))

@@ -41,7 +41,6 @@ class YayProvider(Provider):
         return subprocess.Popen([*CMD_INSTALL, *package]).wait() == 0
         
     def remove(self, *package:str) -> bool:
-        """remove a package or a series of packages"""
         return subprocess.Popen([*CMD_REMOVE, *package]).wait() == 0
     
     def upgrade(self) -> bool:
@@ -51,15 +50,17 @@ class YayProvider(Provider):
         return subprocess.Popen(CMD_UPDATE).wait() == 0
     
     def search(self, query:str, noaur:bool=False) -> bool:
+        """
+        Search for packages containing the search string. 
+        If --noaur is added, AUR packages are omitted.
+        """
         cmd = [*CMD_SEARCH]
         if noaur:
             cmd.append('--repo')
         cmd.append(query)
-        print(f'search({query!r}, {noaur=!r})')
         return paged_subprocess(cmd, modify_line=_parse_search_line).wait() == 0
         
     def info(self, package:str) -> bool:
-        print(f'info({package!r})')
         return subprocess.Popen([*CMD_INFO, package]).wait() == 0
     
     def stats(self) -> bool:

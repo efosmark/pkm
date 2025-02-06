@@ -18,7 +18,6 @@ class AptProvider(Provider):
         return subprocess.Popen([*CMD_INSTALL, *package]).wait() == 0
         
     def remove(self, *package:str) -> bool:
-        """remove a package or a series of packages"""
         return subprocess.Popen([*CMD_REMOVE, *package]).wait() == 0
     
     def upgrade(self) -> bool:
@@ -34,7 +33,7 @@ class AptProvider(Provider):
         return subprocess.Popen([*CMD_INFO, package]).wait() == 0
     
     def stats(self) -> bool:
-        raise NotImplemented()
+        raise NotImplementedError()
     
     def clean(self, deep:bool=False) -> bool:
         return subprocess.Popen(CMD_CLEAN_DEEP if deep else CMD_CLEAN).wait() == 0

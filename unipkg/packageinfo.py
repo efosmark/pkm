@@ -1,3 +1,7 @@
+""" A container for standard package information fields.
+This is used to gain a standard textual output on packages.
+See unipkg.providers.yay._parse_search_line as an implementation example.
+"""
 from dataclasses import dataclass
 
 def ellipsis(text:str|None, maxlen:int) -> str:
